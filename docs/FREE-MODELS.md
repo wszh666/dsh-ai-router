@@ -132,7 +132,7 @@ fanout.cmd -TasksFile 列表.txt -Workers "zhipu/glm-4-flash-250414,zhipu/glm-z1
 | 图片 | pollinations | 0 元 | ✅ 可出图，但 768×768、强制水印、中文提示词差 |
 | 图片 | Ark `seedream-5-5` | 按 token（4096/张） | 账号欠费已恢复，可出图（出图前先问用户） |
 | 视频 | 智谱 `cogvideox-flash` | 0 元 | ⚠️ 高峰固定 `429 / 1305`，8 次重试全失败，只能错峰 |
-| 视频 | Ark `seedance-2-5` | 按秒×分辨率 | ❌ `ModelNotOpen`：账号 2134405496 未开通，需控制台开通 |
+| 视频 | Ark `seedance-2-5` | 按秒×分辨率 | ❌ `ModelNotOpen`：该账号未开通此模型，需在控制台申请开通 |
 | 视频 | Agnes AI（`apihub.agnes-ai.com/v1`） | 号称免费无限期 | 未验证：需邮箱注册换 Key，OpenAI 兼容，模型 `agnes-video-v2.0` |
 
 规矩：**出图/出视频前先问用户走哪条**（免费优先），因为出图会消耗额度、出视频贵一到两个数量级。
