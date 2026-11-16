@@ -1,0 +1,25 @@
+{
+  "name": "@local/ai-router",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-model routing: OpenAI-compatible provider routes (Zhipu free tier, Pollinations keyless, ModelScope, OpenRouter free pool, Doubao/Volcano Ark, Tencent TokenHub, local Ollama) plus filesystem skill loading.",
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "bin",
+    "locale/*.json",
+    "docs",
+    "icon.svg"
+  ]
+}

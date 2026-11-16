@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Multi-model routing">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#101823"/>
+  <path d="M16 32h10" stroke="#3ddc97" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="14" cy="32" r="4.2" fill="#3ddc97"/>
+  <path d="M26 32c6 0 6-12 12-12h8" stroke="#4aa8ff" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <path d="M26 32h20" stroke="#ffb547" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M26 32c6 0 6 12 12 12h8" stroke="#ff6b9d" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <circle cx="48" cy="20" r="3.6" fill="#4aa8ff"/>
+  <circle cx="48" cy="32" r="3.6" fill="#ffb547"/>
+  <circle cx="48" cy="44" r="3.6" fill="#ff6b9d"/>
+</svg>

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Multi-model routing",
+    "description": "Declares OpenAI-compatible routes on the generic adapter: Zhipu GLM free tier, keyless Pollinations fallback, ModelScope, the OpenRouter free pool, Doubao (Volcano Ark), Tencent TokenHub, and local Ollama, plus explicit subagent model selection.",
+    "detail": "docs/DETAIL.md"
+  }
+}

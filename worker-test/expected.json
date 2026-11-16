@@ -1,0 +1,45 @@
+{
+  "rows": [
+    {
+      "provider": "deepseek",
+      "key": "DEEPSEEK_API_KEY"
+    },
+    {
+      "provider": "doubao",
+      "key": "ARK_API_KEY"
+    },
+    {
+      "provider": "modelscope",
+      "key": "MODELSCOPE_API_KEY"
+    },
+    {
+      "provider": "ollama",
+      "key": null
+    },
+    {
+      "provider": "openrouter",
+      "key": "OPENROUTER_API_KEY"
+    },
+    {
+      "provider": "pollinations",
+      "key": null
+    },
+    {
+      "provider": "tokenhub",
+      "key": "TOKENHUB_API_KEY"
+    },
+    {
+      "provider": "zhipu",
+      "key": "ZHIPU_API_KEY"
+    }
+  ],
+  "expectedKeys": [
+    "ARK_API_KEY",
+    "DEEPSEEK_API_KEY",
+    "MODELSCOPE_API_KEY",
+    "OPENROUTER_API_KEY",
+    "TOKENHUB_API_KEY",
+    "ZHIPU_API_KEY"
+  ],
+  "count": 6
+}

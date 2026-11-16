@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "多模型路由",
+    "description": "给通用适配器声明 OpenAI 兼容路由：智谱 GLM 免费档、Pollinations 免 Key 兜底、魔搭 ModelScope、OpenRouter 免费池、豆包（火山方舟）、腾讯 TokenHub、本地 Ollama，并给子代理打开显式选模型授权。",
+    "detail": "docs/DETAIL.md"
+  }
+}

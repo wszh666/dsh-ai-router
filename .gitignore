@@ -1,0 +1,7 @@
+node_modules/
+*.log
+diagnostics/report.json
+bin/extract-results.json
+tasks.txt
+out/
+.DS_Store

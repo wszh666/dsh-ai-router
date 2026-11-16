@@ -1,0 +1,303 @@
+下面是一份 YAML 配置。只输出一个 JSON 数组，按 provider 名名字母序列出 llm-pi-ai 的 config.providers 下每个 provider 的 apiKeyEnv（没有就写 null），每项形如 {"provider":"zhipu","key":"ZHIPU_API_KEY"}，不要解释、不要代码块围栏。
+
+---
+# @local/ai-router
+# 1) 给已经装着的通用适配器 llm-pi-ai 声明 OpenAI 兼容路由。
+#    适配器负责协议/鉴权/流式，这里只声明端点、模型和凭据引用。
+# 2) 打开子代理的显式选模型授权，否则子代理只能继承父路由。
+- id: llm-pi-ai
+  config:
+    providers:
+      # 本地模型：不需要 Key，离线、数据不出机器。
+      # 只放非思考模型：qwen3-vl:8b 在 OpenAI 兼容端点上会把 token 全花在思考上、
+      # 正文返回空（实测 max_tokens 512 与 300 均被截断），不适合作为子代理。
+      ollama:
+        displayName: Ollama 本地
+        api: openai-completions
+        baseURL: http://127.0.0.1:11434/v1
+        models:
+          - id: qwen2.5vl:7b
+            name: Qwen2.5-VL 7B 本地
+            contextWindow: 128000
+            maxTokens: 8192
+          - id: qwen2.5vl:3b
+            name: Qwen2.5-VL 3B 本地
+            contextWindow: 128000
+            maxTokens: 8192
+
+      # 智谱 BigModel 免费档（2026-11-14 实测：真 Key 全部返回正文）。
+      # Key 已在 .credentials.yaml 的 ZHIPU_API_KEY 里，free-media.cmd 用的也是它。
+      # 免费的是 4.x 代 Flash 系列：glm-4-flash / -250414 / 4.5-flash / 4.7-flash / z1-flash / 4v-flash。
+      # 注意 glm-4.6-flash 无权限（403）；glm-4.7-flash 高峰返回 1305 = 访问量过大（重试即可）。
+      zhipu:
+        displayName: 智谱 GLM（免费档）
+        api: openai-completions
+        apiKeyEnv: ZHIPU_API_KEY
+        baseURL: https://open.bigmodel.cn/api/paas/v4
+        models:
+          # 非思考模型：最快、最稳，日常兜底首选。
+          - id: glm-4-flash
+            name: GLM-4-Flash（免费）
+            contextWindow: 131072
+            maxTokens: 8192
+          - id: glm-4-flash-250414
+            name: GLM-4-Flash-250414（免费）
+            contextWindow: 131072
+            maxTokens: 8192
+          # 思考型：同样免费，但要给够 max_tokens，否则正文为空、只剩思考。
+          - id: glm-4.5-flash
+            name: GLM-4.5-Flash（免费/思考型）
+            contextWindow: 131072
+            maxTokens: 16384
+          - id: glm-4.7-flash
+            name: GLM-4.7-Flash（免费/思考型，200K）
+            contextWindow: 204800
+            maxTokens: 16384
+          - id: glm-z1-flash
+            name: GLM-Z1-Flash（免费/推理）
+            contextWindow: 131072
+            maxTokens: 16384
+          # 视觉免费档。DSH 侧图像入参是否被接受未验证，看图优先走 llm.cmd 或本地 ollama。
+          - id: glm-4v-flash
+            name: GLM-4V-Flash（免费/视觉）
+            contextWindow: 16384
+            maxTokens: 4096
+
+      # pollinations.ai：唯一实测可用的「完全免 Key」文本通道，OpenAI 兼容。
+      # 匿名档限 1 次 / 45 秒 / IP（402 FREE_LIMIT 就是这个），只当最后兜底，别做扇出。
+      # 目录里只有 openai-fast（GPT-OSS 20B，带工具调用能力）。
+      pollinations:
+        displayName: Pollinations（免 Key 兜底）
+        api: openai-completions
+        baseURL: https://text.pollinations.ai/openai
+        headers:
+          Authorization: Bearer pollinations
+        models:
+          - id: openai-fast
+            name: GPT-OSS 20B（Pollinations 免 Key）
+            contextWindow: 131072
+            maxTokens: 8192
+
+      # 魔搭 ModelScope：注册即送每日 2000 次推理额度，OpenAI 兼容。
+      # 把 token 存进 MODELSCOPE_API_KEY 即可用；没 Key 时调用报 MISSING_CREDENTIAL。
+      # 模型 id 来自 2026-11-14 实测的公开目录 GET https://api-inference.modelscope.cn/v1/models（38 个）。
+      modelscope:
+        displayName: 魔搭 ModelScope（2000 次/日）
+        api: openai-completions
+        apiKeyEnv: MODELSCOPE_API_KEY
+        baseURL: https://api-inference.modelscope.cn/v1
+        models:
+          - id: deepseek-ai/DeepSeek-V4.1-Flash
+            name: DeepSeek V4.1 Flash（魔搭）
+            contextWindow: 131072
+            maxTokens: 16384
+          - id: Qwen/Qwen3.8-Flash-Next
+            name: Qwen3.8 Flash Next（魔搭）
+            contextWindow: 131072
+            maxTokens: 16384
+          - id: moonshotai/Kimi-K3.1-Pro
+            name: Kimi K3.1 Pro（魔搭）
+            contextWindow: 262144
+            maxTokens: 16384
+
+      # OpenRouter 免费池（模型 id 以 :free 结尾）。要 API Key，免费注册。
+      # 下面三条取自 2026-11-14 的公开目录（全站 14 个 :free 模型，全部支持工具调用）。
+      # 免费池限速较紧（常见 20 次/分，另有日上限），适合偶尔换一种训练分布问一次。
+      openrouter:
+        displayName: OpenRouter 免费池
+        api: openai-completions
+        apiKeyEnv: OPENROUTER_API_KEY
+        baseURL: https://openrouter.ai/api/v1
+        models:
+          - id: baidu/ernie-5.5-flash-preview:free
+            name: ERNIE 5.5 Flash（OpenRouter 免费，1M）
+            contextWindow: 1024000
+            maxTokens: 16384
+          - id: nvidia/nemotron-3-ultra-550b-a55b:free
+            name: Nemotron 3 Ultra 550B（OpenRouter 免费，1M）
+            contextWindow: 1000000
+            maxTokens: 16384
+          - id: google/gemma-4-31b-it:free
+            name: Gemma 4 31B（OpenRouter 免费）
+            contextWindow: 262144
+            maxTokens: 8192
+
+      # 以下三家拿到 Key 再放开。放开时同时补 allowedModels，模型 id 先用 -ListModels 核实。
+      # 详见 docs/FREE-MODELS.md。
+      #
+      # groq:            # GROQ_API_KEY，免费档 30 次/分、1000 次/日，出字极快
+      #   displayName: Groq
+      #   api: openai-completions
+      #   apiKeyEnv: GROQ_API_KEY
+      #   baseURL: https://api.groq.com/openai/v1
+      #   models:
+      #     - id: openai/gpt-oss-120b
+      #       name: GPT-OSS 120B（Groq 免费档）
+      #       contextWindow: 131072
+      #       maxTokens: 32768
+      #
+      # gemini:          # GEMINI_API_KEY，走官方 OpenAI 兼容层
+      #   displayName: Gemini（免费档）
+      #   api: openai-completions
+      #   apiKeyEnv: GEMINI_API_KEY
+      #   baseURL: https://generativelanguage.googleapis.com/v1beta/openai
+      #   models:
+      #     - id: gemini-3.8-flash
+      #       name: Gemini 3.8 Flash（免费档）
+      #       contextWindow: 1048576
+      #       maxTokens: 32768
+      #
+      # siliconflow:     # SILICONFLOW_API_KEY，国内平台，9B 以下模型长期 0 元
+      #   displayName: 硅基流动（免费小模型）
+      #   api: openai-completions
+      #   apiKeyEnv: SILICONFLOW_API_KEY
+      #   baseURL: https://api.siliconflow.cn/v1
+      #   models:
+      #     - id: Qwen/Qwen2.5-7B-Instruct
+      #       name: Qwen2.5 7B（硅基流动免费）
+      #       contextWindow: 32768
+      #       maxTokens: 4096
+
+      # DeepSeek 官方 API（OpenAI 兼容，https://api.deepseek.com）。**没有免费档，按量付费**：
+      # flash 非高峰 $0.15/1M 输入（未命中缓存）、$0.60/1M 输出；pro 约 4 倍。
+      # 作用：不依赖 DSH 登录态，任何会话/脚本都能直接打 DeepSeek；主模型走的是 deepseek-account 路由。
+      # 没有 DeepSeek Key 时这条路由调用报 MISSING_CREDENTIAL，不影响其它路由。
+      deepseek:
+        displayName: DeepSeek 官方 API
+        api: openai-completions
+        apiKeyEnv: DEEPSEEK_API_KEY
+        baseURL: https://api.deepseek.com
+        models:
+          - id: deepseek-v4-flash
+            name: DeepSeek V4 Flash（官方，便宜档）
+            contextWindow: 1048576
+            maxTokens: 32768
+          - id: deepseek-v4-pro
+            name: DeepSeek V4 Pro（官方，旗舰）
+            contextWindow: 1048576
+            maxTokens: 32768
+
+      # 豆包 = 火山方舟。凭据由 credentials 服务按 ARK_API_KEY 这个名字解析。
+      # 2026-11-14 14:29 起整条线 AccountOverdueError（欠费停服），充值后无需改配置即可恢复。
+      doubao:
+        displayName: 豆包（火山方舟）
+        api: openai-completions
+        apiKeyEnv: ARK_API_KEY
+        baseURL: https://ark.cn-beijing.volces.com/api/v3
+        # 型号 id 有两种写法：带日期的是官方文档示例，控制台「开通管理」里
+        # 复制到的名称可能不同；自建推理接入点则用 ep- 开头的 id。对不上就换这里。
+        models:
+          - id: doubao-seed-2-1-pro-260915
+            name: 豆包 Seed 2.1 Pro
+            contextWindow: 1048576
+            maxTokens: 16384
+
+      # 元宝背后的混元：走腾讯云 TokenHub 的 hy3，已实测可用。
+      # 混元生文默认只有 5 并发（主子账号共享），并行扇出不要超过 5 路。
+
+      # 旧的混元直连入口，2026-11-14 实测已不可用：HUNYUAN_API_KEY 被腾讯云拒绝，
+      # 连 GET /v1/models 都返回 401（响应体为空），不是模型名或网络问题。
+      # 元宝改由下面的 tokenhub/hy3 承载；换到有效 Key 后取消注释即可恢复，
+      # 并同步把两条 hunyuan 记录加回文件末尾的 allowedModels。
+      # hunyuan:
+      #   displayName: 腾讯混元
+      #   api: openai-completions
+      #   apiKeyEnv: HUNYUAN_API_KEY
+      #   baseURL: https://api.hunyuan.cloud.tencent.com/v1
+      #   models:
+      #     - id: hunyuan-turbos-latest
+      #       name: 混元 TurboS
+      #       contextWindow: 131072
+      #       maxTokens: 8192
+
+      # 腾讯云 TokenHub：聚合平台，混元的新入口，兼容 OpenAI 协议。
+      # 模型名填控制台「在线推理」里已开通模型的服务 ID；deepseek-v3 是官方示例值。
+      # hy3 = 混元 Hy3，就是「元宝」这条线实际在用的模型，已端到端实测通过。
+      tokenhub:
+        displayName: TokenHub（腾讯云）
+        api: openai-completions
+        apiKeyEnv: TOKENHUB_API_KEY
+        baseURL: https://tokenhub.tencentmaas.com/v1
+        models:
+          - id: deepseek-v4-pro
+            name: DeepSeek V4 Pro（TokenHub）
+            contextWindow: 131072
+            maxTokens: 16384
+          - id: hy3
+            name: 混元 Hy3（TokenHub）
+            contextWindow: 131072
+            maxTokens: 16384
+          - id: glm-5.3
+            name: GLM-5.3（TokenHub）
+            contextWindow: 131072
+            maxTokens: 16384
+          - id: kimi-k3.1-pro
+            name: Kimi K3.1 Pro（TokenHub）
+            contextWindow: 262144
+            maxTokens: 16384
+
+# 诊断探针：挂载时把各条路由能否解析写入 diagnostics/report.json。
+# 会话级白名单只在建会话时快照，所以旧会话无法自证路由是否注册——由 Host 侧代答。
+- insert:
+    - id: ai-router-diagnostics
+      name: '@local/ai-router'
+
+# 会话创建时记录的白名单；没有它，子代理点名非父路由会被直接拒绝。
+# 父路由也列进来，保证 deepseek-flash 仍可被显式指定。
+- id: subagent-model-selection-settings
+  config:
+    enabled: true
+    allowedModels:
+      - provider: deepseek-account
+        model: deepseek-flash
+      - provider: ollama
+        model: qwen2.5vl:7b
+      - provider: ollama
+        model: qwen2.5vl:3b
+      # 免费档：智谱（Key 已在），非思考模型优先。
+      - provider: zhipu
+        model: glm-4-flash
+      - provider: zhipu
+        model: glm-4-flash-250414
+      - provider: zhipu
+        model: glm-4.5-flash
+      - provider: zhipu
+        model: glm-4.7-flash
+      - provider: zhipu
+        model: glm-z1-flash
+      - provider: zhipu
+        model: glm-4v-flash
+      # 免 Key 兜底（1 次/45 秒，只适合单问）。
+      - provider: pollinations
+        model: openai-fast
+      # 待填 Key：填好 MODELSCOPE_API_KEY / OPENROUTER_API_KEY 后立即可用。
+      - provider: modelscope
+        model: deepseek-ai/DeepSeek-V4.1-Flash
+      - provider: modelscope
+        model: Qwen/Qwen3.8-Flash-Next
+      - provider: modelscope
+        model: moonshotai/Kimi-K3.1-Pro
+      - provider: openrouter
+        model: baidu/ernie-5.5-flash-preview:free
+      - provider: openrouter
+        model: nvidia/nemotron-3-ultra-550b-a55b:free
+      - provider: openrouter
+        model: google/gemma-4-31b-it:free
+      - provider: doubao
+        model: doubao-seed-2-1-pro-260915
+      # hunyuan 直连已停用（401），元宝改走 tokenhub/hy3；恢复 Key 后把这两行加回来。
+      # - provider: hunyuan
+      #   model: hunyuan-turbos-latest
+      - provider: tokenhub
+        model: deepseek-v4-pro
+      - provider: tokenhub
+        model: hy3
+      - provider: tokenhub
+        model: glm-5.3
+      - provider: tokenhub
+        model: kimi-k3.1-pro
+      # DeepSeek 官方 API：填好 DEEPSEEK_API_KEY 才可用（付费）。
+      - provider: deepseek
+        model: deepseek-v4-flash
+      - provider: deepseek
+        model: deepseek-v4-pro
