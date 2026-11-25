@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# 最小权限：只读仓库内容，其余一律不下发
+permissions:
+  contents: read
+
+# 同一分支只跑一份，新推送取消旧运行
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: 语法与打包校验
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # 无依赖项目，先确认这一点，避免以后加了依赖 CI 静默跳过安装
+      - name: 检查 package.json 可解析
+        run: |
+          node -e "
+            const p = require('./package.json');
+            console.log('name:', p.name, 'version:', p.version, 'private:', p.private);
+            if (!p.name || !p.version) { console.error('缺少 name 或 version'); process.exit(1); }
+            const deps = Object.keys(p.dependencies || {});
+            console.log('dependencies:', deps.length);
+            if (deps.length) {
+              console.error('检测到依赖，需要补 npm ci 步骤');
+              process.exit(1);
+            }
+          "
+
+      # 每个 .js / .cjs 都过一遍 node --check：能抓语法错，零依赖零安装
+      - name: 语法检查（node --check）
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r f; do
+            if node --check "$f"; then
+              echo "  OK  $f"
+            else
+              echo "  FAIL $f"
+              fail=1
+            fi
+          done < <(find . -path ./node_modules -prune -o \( -name '*.js' -o -name '*.cjs' -o -name '*.mjs' \) -type f -print)
+          exit $fail
+
+      # cordis.patch.yml 是 DSH bundle 的入口配置，坏了插件直接起不来
+      - name: 校验 cordis.patch.yml
+        run: |
+          node -e "
+            const fs = require('fs');
+            const t = fs.readFileSync('cordis.patch.yml', 'utf8');
+            if (!t.trim()) { console.error('cordis.patch.yml 为空'); process.exit(1); }
+            if (t.includes('\t')) { console.error('发现制表符，YAML 不允许'); process.exit(1); }
+            console.log('cordis.patch.yml 存在，', t.split('\n').length, '行');
+          "
+
+      # 把所有 exports / files 指向的路径都验一遍，防止发布后引用断链。
+      # 逻辑抽在 .github/scripts/check-exports.cjs 里，本地可同一份直接跑。
+      - name: 校验 exports 与 files 指向真实存在
+        run: node .github/scripts/check-exports.cjs
+
+      # 产物可下载：Release 挂这个 tgz 就能一键装
+      - name: 打包（npm pack）
+        run: npm pack --dry-run && npm pack
+
+      - name: 上传 tgz 产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-tgz
+          path: '*.tgz'
+          retention-days: 14
+          if-no-files-found: error

@@ -1,0 +1,25 @@
+version: 2
+
+updates:
+  # 仓库本身零运行时依赖，但 workflow 里引用的 action 会老化（旧 major 会失去
+  # runner 兼容性与安全修复），所以只盯 GitHub Actions 这一个生态。
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Shanghai'
+    # 直接开 PR，不攒在 Dependabot 面板里等人去看
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+    labels:
+      - 'dependencies'
+      - 'github-actions'
+    groups:
+      # 官方 actions/* 一次性打包成一个 PR，避免每周刷出一堆单条
+      actions-official:
+        patterns:
+          - 'actions/*'
