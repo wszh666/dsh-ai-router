@@ -22,10 +22,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
+
+      # workflow 里每个 action 都必须在 actions.lock 里锁到具体 commit。
+      # 校验器是官方 gh 扩展 github/gh-actions-lock（MIT）。
+      # 改了 workflow 却忘了更新 lockfile，这一步会直接红——本地复跑：
+      #   gh actions-lock        （更新 lockfile）
+      #   gh actions-lock --no-fix  （只校验，CI 就是这个）
+      - name: 校验 workflow 依赖锁定（actions.lock）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh extension list | grep -q 'gh-actions-lock' \
+            || gh extension install github/gh-actions-lock
+          gh actions-lock --no-fix
 
       - name: 安装 Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
 
@@ -80,7 +94,7 @@ jobs:
         run: npm pack --dry-run && npm pack
 
       - name: 上传 tgz 产物
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: package-tgz
           path: '*.tgz'
